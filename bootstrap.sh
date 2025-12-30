@@ -161,28 +161,18 @@ install_brew() {
   log "Homebrew installed: $(brew --version | head -n 1)"
 }
 
-# ----------------------------
 # Dotfiles
-# ----------------------------
+# --------
 clone_or_update_dotfiles() {
   if $SKIP_DOTFILES; then
     warn "Skipping dotfiles."
     return 0
   fi
 
-  if [[ "$DOTFILES_REPO" == *"YOUR_USER"* ]]; then
-    warn "DOTFILES_REPO is still the placeholder. Set DOTFILES_REPO to your repo URL."
-    warn "Example: DOTFILES_REPO=https://github.com/eric/dotfiles.git"
-    if ! confirm "Continue anyway (will likely fail)?"; then
-      exit 1
-    fi
-  fi
-
   log "Setting up dotfiles in: $DOTFILES_DIR"
 
   if [[ -d "$DOTFILES_DIR/.git" ]]; then
-    log "Dotfiles repo exists; updating..."
-    run "git -C '$DOTFILES_DIR' pull --rebase"
+    log "Dotfiles repo already exists."
   else
     log "Cloning dotfiles repo..."
     run "git clone '$DOTFILES_REPO' '$DOTFILES_DIR'"
@@ -219,9 +209,8 @@ install_dotfiles() {
   warn "If you use stow, add it to your Brewfile or install it manually, then re-run."
 }
 
-# ----------------------------
-# Packages (brew bundle)
-# ----------------------------
+# Homebrew packages
+# -----------------
 install_packages() {
   if $SKIP_PACKAGES; then
     warn "Skipping packages."
@@ -303,8 +292,8 @@ main() {
 
   install_brew
 
-  # clone_or_update_dotfiles
-  # install_packages
+  clone_or_update_dotfiles
+  install_packages
   # install_dotfiles
   # apply_settings
   #
