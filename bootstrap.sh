@@ -17,7 +17,7 @@ SKIP_PACKAGES=false
 SKIP_SETTINGS=false
 
 usage() {
-  cat <<'EOF'
+    cat <<'EOF'
 Usage: bash bootstrap.sh [options]
 
 Options:
@@ -34,15 +34,15 @@ EOF
 }
 
 while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --yes) ASSUME_YES=true; shift ;;
-    --dry-run) DRY_RUN=true; shift ;;
-    --skip-dotfiles) SKIP_DOTFILES=true; shift ;;
-    --skip-packages) SKIP_PACKAGES=true; shift ;;
-    --skip-settings) SKIP_SETTINGS=true; shift ;;
-    -h|--help) usage; exit 0 ;;
-    *) echo "Unknown arg: $1"; usage; exit 1 ;;
-  esac
+    case "$1" in
+        --yes) ASSUME_YES=true; shift ;;
+        --dry-run) DRY_RUN=true; shift ;;
+        --skip-dotfiles) SKIP_DOTFILES=true; shift ;;
+        --skip-packages) SKIP_PACKAGES=true; shift ;;
+        --skip-settings) SKIP_SETTINGS=true; shift ;;
+        -h|--help) usage; exit 0 ;;
+        *) echo "Unknown arg: $1"; usage; exit 1 ;;
+    esac
 done
 
 # Helpers
@@ -52,18 +52,18 @@ warn() { printf "\033[1;33m!!\033[0m %s\n" "$*"; }
 err()  { printf "\033[1;31mxx\033[0m %s\n" "$*"; }
 
 run() {
-  if $DRY_RUN; then
-    echo "[dry-run] $*"
-  else
-    eval "$@"
-  fi
+    if $DRY_RUN; then
+        echo "[dry-run] $*"
+    else
+        eval "$@"
+    fi
 }
 
 confirm() {
-  local prompt="${1:-Continue?}"
-  $ASSUME_YES && return 0
-  read -r -p "$prompt [y/N] " ans
-  [[ "${ans:-}" =~ ^[Yy]$ ]]
+    local prompt="${1:-Continue?}"
+    $ASSUME_YES && return 0
+    read -r -p "$prompt [y/N] " ans
+    [[ "${ans:-}" =~ ^[Yy]$ ]]
 }
 
 have() { command -v "$1" >/dev/null 2>&1; }
@@ -71,28 +71,28 @@ have() { command -v "$1" >/dev/null 2>&1; }
 is_macos() { [[ "$(uname -s)" == "Darwin" ]]; }
 
 is_wsl() {
-  # Works for WSL1/WSL2
-  grep -qiE "(microsoft|wsl)" /proc/version 2>/dev/null
+    # Works for WSL1/WSL2
+    grep -qiE "(microsoft|wsl)" /proc/version 2>/dev/null
 }
 
 need_sudo() {
-  if have sudo; then
-    sudo -n true >/dev/null 2>&1 || true
-  else
-    err "sudo not found; install it or run as a user with privileges."
-    exit 1
-  fi
+    if have sudo; then
+        sudo -n true >/dev/null 2>&1 || true
+    else
+        err "sudo not found; install it or run as a user with privileges."
+        exit 1
+    fi
 }
 
 # Platform detection
 PLATFORM="unknown"
 if is_macos; then
-  PLATFORM="macos"
+    PLATFORM="macos"
 elif is_wsl; then
-  PLATFORM="wsl"
+    PLATFORM="wsl"
 else
-  warn "Unknown platform. This script targets macOS and WSL (Ubuntu/Debian)."
-  PLATFORM="linux"
+    warn "Unknown platform. This script targets macOS and WSL (Ubuntu/Debian)."
+    PLATFORM="linux"
 fi
 
 log "Detected platform: $PLATFORM"
@@ -101,204 +101,204 @@ log "Detected platform: $PLATFORM"
 # Prereqs
 # ----------------------------
 install_macos_prereqs() {
-  log "Checking macOS prerequisites..."
-  if ! xcode-select -p >/dev/null 2>&1; then
-    warn "Xcode Command Line Tools not found."
-    if confirm "Install Xcode Command Line Tools now?"; then
-      # This opens a GUI prompt; user must complete it.
-      run "xcode-select --install || true"
-      warn "If installation prompts appeared, complete them, then re-run the script."
-    else
-      warn "Skipping Xcode CLT install. Brew install may fail."
+    log "Checking macOS prerequisites..."
+    if ! xcode-select -p >/dev/null 2>&1; then
+        warn "Xcode Command Line Tools not found."
+        if confirm "Install Xcode Command Line Tools now?"; then
+            # This opens a GUI prompt; user must complete it.
+            run "xcode-select --install || true"
+            warn "If installation prompts appeared, complete them, then re-run the script."
+        else
+            warn "Skipping Xcode CLT install. Brew install may fail."
+        fi
     fi
-  fi
 }
 
 install_wsl_prereqs() {
-  log "Installing WSL prerequisites (Ubuntu/Debian)..."
-  need_sudo
-  run "sudo apt-get update -y"
-  run "sudo apt-get install -y build-essential curl file git procps ca-certificates"
+    log "Installing WSL prerequisites (Ubuntu/Debian)..."
+    need_sudo
+    run "sudo apt-get update -y"
+    run "sudo apt-get install -y build-essential curl file git procps ca-certificates"
 }
 
 # Homebrew
 # --------
 brew_shellenv_eval() {
-  # Ensure brew is on PATH for current process.
-  if is_macos; then
-    if [[ -x /opt/homebrew/bin/brew ]]; then
-      run 'eval "$(/opt/homebrew/bin/brew shellenv)"'
+    # Ensure brew is on PATH for current process.
+    if is_macos; then
+        if [[ -x /opt/homebrew/bin/brew ]]; then
+            run 'eval "$(/opt/homebrew/bin/brew shellenv)"'
+        fi
+    else
+        if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+            run 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'
+        fi
     fi
-  else
-    if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
-      run 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'
-    fi
-  fi
 }
 
 install_brew() {
-  if have brew; then
-    log "Homebrew already installed."
-    return 0
-  fi
+    if have brew; then
+        log "Homebrew already installed."
+        return 0
+    fi
 
-  log "Installing Homebrew..."
-  if ! have curl; then
-    err "curl is required to install Homebrew."
-    exit 1
-  fi
+    log "Installing Homebrew..."
+    if ! have curl; then
+        err "curl is required to install Homebrew."
+        exit 1
+    fi
 
-  # Official Homebrew installer
-  run '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+    # Official Homebrew installer
+    run '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
 
-  brew_shellenv_eval
+    brew_shellenv_eval
 
-  if ! have brew; then
-    err "brew still not found after install."
-    exit 1
-  fi
+    if ! have brew; then
+        err "brew still not found after install."
+        exit 1
+    fi
 
-  log "Homebrew installed: $(brew --version | head -n 1)"
+    log "Homebrew installed: $(brew --version | head -n 1)"
 }
 
 # Dotfiles
 # --------
 clone_or_update_dotfiles() {
-  if $SKIP_DOTFILES; then
-    warn "Skipping dotfiles."
-    return 0
-  fi
+    if $SKIP_DOTFILES; then
+        warn "Skipping dotfiles."
+        return 0
+    fi
 
-  log "Setting up dotfiles in: $DOTFILES_DIR"
+    log "Setting up dotfiles in: $DOTFILES_DIR"
 
-  if [[ -d "$DOTFILES_DIR/.git" ]]; then
-    log "Dotfiles repo already exists."
-  else
-    log "Cloning dotfiles repo..."
-    run "git clone '$DOTFILES_REPO' '$DOTFILES_DIR'"
-  fi
+    if [[ -d "$DOTFILES_DIR/.git" ]]; then
+        log "Dotfiles repo already exists."
+    else
+        log "Cloning dotfiles repo..."
+        run "git clone '$DOTFILES_REPO' '$DOTFILES_DIR'"
+    fi
 }
 
 install_dotfiles() {
-  if $SKIP_DOTFILES; then return 0; fi
+    if $SKIP_DOTFILES; then return 0; fi
 
-  # Preferred: repo provides install script
-  if [[ -x "$DOTFILES_DIR/install.sh" ]]; then
-    log "Running dotfiles install script..."
-    run "'$DOTFILES_DIR/install.sh'"
-    return 0
-  fi
+    # Preferred: repo provides install script
+    if [[ -x "$DOTFILES_DIR/install.sh" ]]; then
+        log "Running dotfiles install script..."
+        run "'$DOTFILES_DIR/install.sh'"
+        return 0
+    fi
 
-  # Fallback: GNU stow
-  if have stow; then
-    log "Installing dotfiles via stow..."
-    # stow each directory (ignore .git, etc.)
-    local d
-    for d in "$DOTFILES_DIR"/*/; do
-      [[ -d "$d" ]] || continue
-      local name
-      name="$(basename "$d")"
-      [[ "$name" == ".git" ]] && continue
-      log "stow $name"
-      run "stow -d '$DOTFILES_DIR' -t '$HOME' '$name'"
-    done
-    return 0
-  fi
+    # Fallback: GNU stow
+    if have stow; then
+        log "Installing dotfiles via stow..."
+        # stow each directory (ignore .git, etc.)
+        local d
+        for d in "$DOTFILES_DIR"/*/; do
+            [[ -d "$d" ]] || continue
+            local name
+            name="$(basename "$d")"
+            [[ "$name" == ".git" ]] && continue
+            log "stow $name"
+            run "stow -d '$DOTFILES_DIR' -t '$HOME' '$name'"
+        done
+        return 0
+    fi
 
-  warn "No install.sh found and stow is not installed."
-  warn "If you use stow, add it to your Brewfile or install it manually, then re-run."
+    warn "No install.sh found and stow is not installed."
+    warn "If you use stow, add it to your Brewfile or install it manually, then re-run."
 }
 
 # Homebrew packages
 # -----------------
 install_packages() {
-  if $SKIP_PACKAGES; then
-    warn "Skipping packages."
-    return 0
-  fi
+    if $SKIP_PACKAGES; then
+        warn "Skipping packages."
+        return 0
+    fi
 
-  if [[ -f "$BREWFILE_PATH" ]]; then
-    log "Installing packages from Brewfile: $BREWFILE_PATH"
-    run "brew update"
-    run "brew bundle --file '$BREWFILE_PATH'"
-  else
-    warn "No Brewfile found at $BREWFILE_PATH; skipping brew bundle."
-    warn "Tip: put a Brewfile in your dotfiles repo and set BREWFILE_PATH if needed."
-  fi
+    if [[ -f "$BREWFILE_PATH" ]]; then
+        log "Installing packages from Brewfile: $BREWFILE_PATH"
+        run "brew update"
+        run "brew bundle --file '$BREWFILE_PATH'"
+    else
+        warn "No Brewfile found at $BREWFILE_PATH; skipping brew bundle."
+        warn "Tip: put a Brewfile in your dotfiles repo and set BREWFILE_PATH if needed."
+    fi
 }
 
 # ----------------------------
 # Settings
 # ----------------------------
 apply_macos_defaults() {
-  log "Applying a few macOS defaults (safe-ish)…"
-  # These are examples; tailor to your preferences.
-  run "defaults write NSGlobalDomain AppleShowAllExtensions -bool true"
-  run "defaults write com.apple.finder AppleShowAllFiles -bool true"
-  run "defaults write com.apple.finder ShowPathbar -bool true"
-  run "defaults write com.apple.finder ShowStatusBar -bool true"
-  run "defaults write com.apple.dock autohide -bool true"
-  run "defaults write NSGlobalDomain KeyRepeat -int 2"
-  run "defaults write NSGlobalDomain InitialKeyRepeat -int 15"
-  run "killall Finder >/dev/null 2>&1 || true"
-  run "killall Dock >/dev/null 2>&1 || true"
+    log "Applying a few macOS defaults (safe-ish)…"
+    # These are examples; tailor to your preferences.
+    run "defaults write NSGlobalDomain AppleShowAllExtensions -bool true"
+    run "defaults write com.apple.finder AppleShowAllFiles -bool true"
+    run "defaults write com.apple.finder ShowPathbar -bool true"
+    run "defaults write com.apple.finder ShowStatusBar -bool true"
+    run "defaults write com.apple.dock autohide -bool true"
+    run "defaults write NSGlobalDomain KeyRepeat -int 2"
+    run "defaults write NSGlobalDomain InitialKeyRepeat -int 15"
+    run "killall Finder >/dev/null 2>&1 || true"
+    run "killall Dock >/dev/null 2>&1 || true"
 }
 
 apply_wsl_tweaks() {
-  log "Applying a few WSL tweaks…"
-  # Make sure git doesn't translate line endings unexpectedly
-  if have git; then
-    run "git config --global core.autocrlf input"
-  fi
-
-  # Optional: create a basic /etc/wsl.conf if you want (requires sudo).
-  # This can help with metadata; only write if it doesn't exist.
-  if [[ ! -f /etc/wsl.conf ]]; then
-    need_sudo
-    if confirm "Create /etc/wsl.conf with metadata enabled? (may require WSL restart)"; then
-      run "sudo tee /etc/wsl.conf >/dev/null <<'EOF'
-[automount]
-enabled = true
-options = \"metadata,umask=22,fmask=11\"
-mountFsTab = false
-EOF"
-      warn "wsl.conf written. You may need to run: wsl.exe --shutdown (from Windows) to apply."
+    log "Applying a few WSL tweaks…"
+    # Make sure git doesn't translate line endings unexpectedly
+    if have git; then
+        run "git config --global core.autocrlf input"
     fi
-  fi
+
+    # Optional: create a basic /etc/wsl.conf if you want (requires sudo).
+    # This can help with metadata; only write if it doesn't exist.
+    if [[ ! -f /etc/wsl.conf ]]; then
+        need_sudo
+        if confirm "Create /etc/wsl.conf with metadata enabled? (may require WSL restart)"; then
+            run "sudo tee /etc/wsl.conf >/dev/null <<'EOF'
+            [automount]
+            enabled = true
+            options = \"metadata,umask=22,fmask=11\"
+            mountFsTab = false
+            EOF"
+            warn "wsl.conf written. You may need to run: wsl.exe --shutdown (from Windows) to apply."
+        fi
+    fi
 }
 
 apply_settings() {
-  if $SKIP_SETTINGS; then
-    warn "Skipping settings."
-    return 0
-  fi
+    if $SKIP_SETTINGS; then
+        warn "Skipping settings."
+        return 0
+    fi
 
-  case "$PLATFORM" in
-    macos) apply_macos_defaults ;;
-    wsl) apply_wsl_tweaks ;;
-    *) warn "No settings defined for platform: $PLATFORM" ;;
-  esac
+    case "$PLATFORM" in
+        macos) apply_macos_defaults ;;
+        wsl) apply_wsl_tweaks ;;
+        *) warn "No settings defined for platform: $PLATFORM" ;;
+    esac
 }
 
 
 # Main
 # ----
 main() {
-  case "$PLATFORM" in
-    macos) install_macos_prereqs ;;
-    wsl) install_wsl_prereqs ;;
-    *) warn "Skipping platform-specific prereqs for: $PLATFORM" ;;
-  esac
+    case "$PLATFORM" in
+        macos) install_macos_prereqs ;;
+        wsl) install_wsl_prereqs ;;
+        *) warn "Skipping platform-specific prereqs for: $PLATFORM" ;;
+    esac
 
-  install_brew
+    install_brew
 
-  clone_or_update_dotfiles
-  install_packages
-  # install_dotfiles
-  # apply_settings
-  #
-  log "Bootstrap complete."
-  warn "Open a new terminal (or source your rc file) so PATH changes take effect."
+    clone_or_update_dotfiles
+    install_packages
+    # install_dotfiles
+    # apply_settings
+    #
+    log "Bootstrap complete."
+    warn "Open a new terminal (or source your rc file) so PATH changes take effect."
 }
 
 main
