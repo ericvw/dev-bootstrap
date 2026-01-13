@@ -182,31 +182,13 @@ clone_or_update_dotfiles() {
 install_dotfiles() {
     if $SKIP_DOTFILES; then return 0; fi
 
-    # Preferred: repo provides install script
     if [[ -x "$DOTFILES_DIR/install.sh" ]]; then
         log "Running dotfiles install script..."
         run "'$DOTFILES_DIR/install.sh'"
         return 0
     fi
 
-    # Fallback: GNU stow
-    if have stow; then
-        log "Installing dotfiles via stow..."
-        # stow each directory (ignore .git, etc.)
-        local d
-        for d in "$DOTFILES_DIR"/*/; do
-            [[ -d "$d" ]] || continue
-            local name
-            name="$(basename "$d")"
-            [[ "$name" == ".git" ]] && continue
-            log "stow $name"
-            run "stow -d '$DOTFILES_DIR' -t '$HOME' '$name'"
-        done
-        return 0
-    fi
-
-    warn "No install.sh found and stow is not installed."
-    warn "If you use stow, add it to your Brewfile or install it manually, then re-run."
+    warn "No install.sh found."
 }
 
 # Homebrew packages
@@ -237,34 +219,16 @@ apply_macos_defaults() {
     run "defaults write com.apple.finder AppleShowAllFiles -bool true"
     run "defaults write com.apple.finder ShowPathbar -bool true"
     run "defaults write com.apple.finder ShowStatusBar -bool true"
-    run "defaults write com.apple.dock autohide -bool true"
-    run "defaults write NSGlobalDomain KeyRepeat -int 2"
-    run "defaults write NSGlobalDomain InitialKeyRepeat -int 15"
+    # run "defaults write com.apple.dock autohide -bool true"
+    # run "defaults write NSGlobalDomain KeyRepeat -int 2"
+    # run "defaults write NSGlobalDomain InitialKeyRepeat -int 15"
     run "killall Finder >/dev/null 2>&1 || true"
     run "killall Dock >/dev/null 2>&1 || true"
 }
 
 apply_wsl_tweaks() {
     log "Applying a few WSL tweaks…"
-    # Make sure git doesn't translate line endings unexpectedly
-    if have git; then
-        run "git config --global core.autocrlf input"
-    fi
-
-    # Optional: create a basic /etc/wsl.conf if you want (requires sudo).
-    # This can help with metadata; only write if it doesn't exist.
-    if [[ ! -f /etc/wsl.conf ]]; then
-        need_sudo
-        if confirm "Create /etc/wsl.conf with metadata enabled? (may require WSL restart)"; then
-            run "sudo tee /etc/wsl.conf >/dev/null <<'EOF'
-            [automount]
-            enabled = true
-            options = \"metadata,umask=22,fmask=11\"
-            mountFsTab = false
-            EOF"
-            warn "wsl.conf written. You may need to run: wsl.exe --shutdown (from Windows) to apply."
-        fi
-    fi
+    log "Nothing to apply."
 }
 
 apply_settings() {
@@ -294,9 +258,8 @@ main() {
 
     clone_or_update_dotfiles
     install_packages
-    # install_dotfiles
+    install_dotfiles
     # apply_settings
-    #
     log "Bootstrap complete."
     warn "Open a new terminal (or source your rc file) so PATH changes take effect."
 }
