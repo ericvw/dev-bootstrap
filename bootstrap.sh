@@ -221,6 +221,31 @@ install_packages() {
 }
 # }}}
 
+# Bootstrap default shell {{{
+set_default_shell_to_fish() {
+    local shell=
+    shell="$(brew --prefix)/bin/fish"
+    if [[ ! -x "$shell" ]]; then
+        warn "fish is not installed; skipping applying default shell."
+        return 0
+    fi
+
+    # Already set?
+    if [[ $(awk -F: -v u="$USER" '$1==u {print $NF; exit}' /etc/passwd) == "$shell" ]]; then
+        log "Default shell already set to fish: $shell"
+        return 0
+    fi
+
+    # Append to list of permitted shells if it doesn't exist.
+    if ! grep -qxF "$shell" /etc/shells; then
+        log "Adding fish to /etc/shells (requires sudo)..."
+        run "echo $shell | sudo tee -a /etc/shells"
+    fi
+
+    run "chsh -s '$shell'"
+}
+# }}}
+
 # Bootstrap OS settings {{{
 apply_macos_defaults() {
     log "Applying a few macOS defaults (safe-ish)…"
@@ -264,6 +289,7 @@ main() {
     clone_or_update_dotfiles
     install_packages
     install_dotfiles
+    set_default_shell_to_fish
     # apply_settings
 
     log "Bootstrap complete."
