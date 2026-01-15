@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
+# vim: foldmethod=marker
 
 set -euo pipefail
 
-# Configuration
-# -------------
+# Configuration {{{
 DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/ericvw/dotfiles}"
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
 BREWFILE_PATH="${BREWFILE_PATH:-$DOTFILES_DIR/Brewfile}"
+# }}}
 
-# Flags
-# -----
+# Command-line parsing {{{
 ASSUME_YES=false
 DRY_RUN=false
 SKIP_DOTFILES=false
@@ -44,9 +44,9 @@ while [[ $# -gt 0 ]]; do
         *) echo "Unknown arg: $1"; usage; exit 1 ;;
     esac
 done
+# }}}
 
-# Helpers
-# -------
+# Helpers {{{
 log()  { printf "\033[1;34m==>\033[0m %s\n" "$*"; }
 warn() { printf "\033[1;33m!!\033[0m %s\n" "$*"; }
 err()  { printf "\033[1;31mxx\033[0m %s\n" "$*"; }
@@ -83,8 +83,9 @@ need_sudo() {
         exit 1
     fi
 }
+# }}}
 
-# Platform detection
+# Platform detection {{{
 PLATFORM="unknown"
 if is_macos; then
     PLATFORM="macos"
@@ -94,12 +95,9 @@ else
     warn "Unknown platform. This script targets macOS and WSL (Ubuntu/Debian)."
     PLATFORM="linux"
 fi
+# }}}
 
-log "Detected platform: $PLATFORM"
-
-# ----------------------------
-# Prereqs
-# ----------------------------
+# Bootstrap OS packages for Homebrew {{{
 install_macos_prereqs() {
     log "Checking macOS prerequisites..."
     if ! xcode-select -p >/dev/null 2>&1; then
@@ -121,8 +119,16 @@ install_wsl_prereqs() {
     run "sudo apt-get install -y build-essential curl file git procps ca-certificates"
 }
 
-# Homebrew
-# --------
+install_platform_prereqs() {
+    case "$PLATFORM" in
+        macos) install_macos_prereqs ;;
+        wsl) install_wsl_prereqs ;;
+        *) warn "Skipping platform-specific prerequisites for: $PLATFORM" ;;
+    esac
+}
+# }}}
+
+# Bootstrap Homebrew {{{
 brew_shellenv_eval() {
     # Ensure brew is on PATH for current process.
     if is_macos; then
@@ -137,6 +143,11 @@ brew_shellenv_eval() {
 }
 
 install_brew() {
+    # If brew is not on PATH, attempt to add it to PATH in case it is already installed.
+    if ! have brew; then
+        brew_shellenv_eval
+    fi
+
     if have brew; then
         log "Homebrew already installed."
         return 0
@@ -148,7 +159,7 @@ install_brew() {
         exit 1
     fi
 
-    # Official Homebrew installer
+    # Official Homebrew installer.
     run '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
 
     brew_shellenv_eval
@@ -160,9 +171,9 @@ install_brew() {
 
     log "Homebrew installed: $(brew --version | head -n 1)"
 }
+# }}}
 
-# Dotfiles
-# --------
+# Bootstrap dotfiles {{{
 clone_or_update_dotfiles() {
     if $SKIP_DOTFILES; then
         warn "Skipping dotfiles."
@@ -190,9 +201,9 @@ install_dotfiles() {
 
     warn "No install.sh found."
 }
+# }}}
 
-# Homebrew packages
-# -----------------
+# Bootstrap packages {{{
 install_packages() {
     if $SKIP_PACKAGES; then
         warn "Skipping packages."
@@ -208,10 +219,9 @@ install_packages() {
         warn "Tip: put a Brewfile in your dotfiles repo and set BREWFILE_PATH if needed."
     fi
 }
+# }}}
 
-# ----------------------------
-# Settings
-# ----------------------------
+# Bootstrap OS settings {{{
 apply_macos_defaults() {
     log "Applying a few macOS defaults (safe-ish)…"
     # These are examples; tailor to your preferences.
@@ -243,25 +253,22 @@ apply_settings() {
         *) warn "No settings defined for platform: $PLATFORM" ;;
     esac
 }
+# }}}
 
-
-# Main
-# ----
+# Main {{{
 main() {
-    case "$PLATFORM" in
-        macos) install_macos_prereqs ;;
-        wsl) install_wsl_prereqs ;;
-        *) warn "Skipping platform-specific prereqs for: $PLATFORM" ;;
-    esac
+    log "Detected platform: $PLATFORM"
 
+    install_platform_prereqs
     install_brew
-
     clone_or_update_dotfiles
     install_packages
     install_dotfiles
     # apply_settings
+
     log "Bootstrap complete."
     warn "Open a new terminal (or source your rc file) so PATH changes take effect."
 }
 
 main
+# }}}
