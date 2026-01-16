@@ -222,6 +222,17 @@ install_packages() {
 # }}}
 
 # Bootstrap default shell {{{
+user_default_shell() {
+    case "$PLATFORM" in
+        macos)
+            dscl . -read ~/ UserShell | sed 's/UserShell: //'
+            ;;
+        *)
+            awk -F: -v u="$USER" '$1==u {print $NF; exit}' /etc/passwd
+            ;;
+    esac
+}
+
 set_default_shell_to_fish() {
     local shell=
     shell="$(brew --prefix)/bin/fish"
@@ -231,7 +242,7 @@ set_default_shell_to_fish() {
     fi
 
     # Already set?
-    if [[ $(awk -F: -v u="$USER" '$1==u {print $NF; exit}' /etc/passwd) == "$shell" ]]; then
+    if [[ $(user_default_shell) == "$shell" ]]; then
         log "Default shell already set to fish: $shell"
         return 0
     fi
