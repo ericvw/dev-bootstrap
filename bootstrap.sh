@@ -6,7 +6,7 @@ set -euo pipefail
 # Configuration {{{
 DOTFILES_REPO="${DOTFILES_REPO:-https://github.com/ericvw/dotfiles}"
 DOTFILES_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
-BREWFILE_PATH="${BREWFILE_PATH:-$DOTFILES_DIR/Brewfile}"
+BREW_FORMULAE_FILE="${BREW_FORMULAE_FILE:-$DOTFILES_DIR/brew-formulae.txt}"
 # }}}
 
 # Command-line parsing {{{
@@ -24,12 +24,12 @@ Options:
   --yes            Non-interactive; assume "yes" for prompts
   --dry-run        Print actions without executing them
   --skip-dotfiles  Don't clone/install dotfiles
-  --skip-packages  Don't install packages (brew bundle)
+  --skip-packages  Don't install packages (brew install)
   --skip-settings  Don't apply OS settings (macOS defaults / WSL tweaks)
   -h, --help       Show help
 
 Env overrides:
-  DOTFILES_REPO, DOTFILES_DIR, BREWFILE_PATH
+  DOTFILES_REPO, DOTFILES_DIR, BREW_FORMULAE_FILE
 EOF
 }
 
@@ -210,14 +210,27 @@ install_packages() {
         return 0
     fi
 
-    if [[ -f "$BREWFILE_PATH" ]]; then
-        log "Installing packages from Brewfile: $BREWFILE_PATH"
-        run "brew update"
-        run "brew bundle --file '$BREWFILE_PATH'"
-    else
-        warn "No Brewfile found at $BREWFILE_PATH; skipping brew bundle."
-        warn "Tip: put a Brewfile in your dotfiles repo and set BREWFILE_PATH if needed."
+    if [[ ! -f "$BREW_FORMULAE_FILE" ]]; then
+        warn "No formula list found at $BREW_FORMULAE_FILE; skipping."
+        return 0
     fi
+
+    mapfile -t formulae < "$BREW_FORMULAE_FILE"
+
+    # Drop empty lines.
+    local -a args=()
+    local f
+    for f in "${formulae[@]}"; do
+        [[ -n "$f" ]] && args+=("$f")
+    done
+
+    if [[ "${#args[@]}" -eq 0 ]]; then
+        warn "Formula list is empty: $BREW_FORMULAE_FILE"
+        return 0
+    fi
+
+    log "Installing formulae from $BREW_FORMULAE_FILE"
+    run "brew install ${args[*]}"
 }
 # }}}
 
