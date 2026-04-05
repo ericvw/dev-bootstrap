@@ -190,7 +190,7 @@ install_brew() {
 # }}}
 
 # Bootstrap dotfiles {{{
-clone_or_update_dotfiles() {
+clone_dotfiles() {
     if $SKIP_DOTFILES; then
         warn "Skipping dotfiles."
         return 0
@@ -326,7 +326,7 @@ main() {
 
     install_platform_prereqs
     install_brew
-    clone_or_update_dotfiles
+    clone_dotfiles
     install_packages
     install_dotfiles
     set_default_shell_to_fish
