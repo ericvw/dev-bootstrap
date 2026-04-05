@@ -55,7 +55,23 @@ run() {
     if $DRY_RUN; then
         echo "[dry-run] $*"
     else
-        eval "$@"
+        "$@"
+    fi
+}
+
+run_eval() {
+    if $DRY_RUN; then
+        echo "[dry-run] $*"
+    else
+        eval "$*"
+    fi
+}
+
+run_sh() {
+    if $DRY_RUN; then
+        echo "[dry-run] $*"
+    else
+        bash -c "$1"
     fi
 }
 
@@ -104,7 +120,7 @@ install_macos_prereqs() {
         warn "Xcode Command Line Tools not found."
         if confirm "Install Xcode Command Line Tools now?"; then
             # This opens a GUI prompt; user must complete it.
-            run "xcode-select --install || true"
+            run_sh 'xcode-select --install || true'
             warn "If installation prompts appeared, complete them, then re-run the script."
         else
             warn "Skipping Xcode CLT install. Brew install may fail."
@@ -115,8 +131,8 @@ install_macos_prereqs() {
 install_wsl_prereqs() {
     log "Installing WSL prerequisites (Ubuntu/Debian)..."
     need_sudo
-    run "sudo apt-get update -y"
-    run "sudo apt-get install -y build-essential curl file git procps ca-certificates"
+    run sudo apt-get update -y
+    run sudo apt-get install -y build-essential curl file git procps ca-certificates
 }
 
 install_platform_prereqs() {
@@ -133,11 +149,11 @@ brew_shellenv_eval() {
     # Ensure brew is on PATH for current process.
     if is_macos; then
         if [[ -x /opt/homebrew/bin/brew ]]; then
-            run 'eval "$(/opt/homebrew/bin/brew shellenv)"'
+            run_eval 'eval "$(/opt/homebrew/bin/brew shellenv)"'
         fi
     else
         if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
-            run 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'
+            run_eval 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'
         fi
     fi
 }
@@ -160,7 +176,7 @@ install_brew() {
     fi
 
     # Official Homebrew installer.
-    run '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+    run_sh '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
 
     brew_shellenv_eval
 
@@ -186,7 +202,7 @@ clone_or_update_dotfiles() {
         log "Dotfiles repo already exists."
     else
         log "Cloning dotfiles repo..."
-        run "git clone '$DOTFILES_REPO' '$DOTFILES_DIR'"
+        run git clone "$DOTFILES_REPO" "$DOTFILES_DIR"
     fi
 }
 
@@ -195,7 +211,7 @@ install_dotfiles() {
 
     if [[ -x "$DOTFILES_DIR/install.sh" ]]; then
         log "Running dotfiles install script..."
-        run "'$DOTFILES_DIR/install.sh'"
+        run "$DOTFILES_DIR/install.sh"
         return 0
     fi
 
@@ -230,7 +246,7 @@ install_packages() {
     fi
 
     log "Installing formulae from $BREW_FORMULAE_FILE"
-    run "brew install ${args[*]}"
+    run brew install "${args[@]}"
 }
 # }}}
 
@@ -263,10 +279,10 @@ set_default_shell_to_fish() {
     # Append to list of permitted shells if it doesn't exist.
     if ! grep -qxF "$shell" /etc/shells; then
         log "Adding fish to /etc/shells (requires sudo)..."
-        run "echo $shell | sudo tee -a /etc/shells"
+        run_sh "echo '$shell' | sudo tee -a /etc/shells"
     fi
 
-    run "chsh -s '$shell'"
+    run chsh -s "$shell"
 }
 # }}}
 
@@ -274,15 +290,15 @@ set_default_shell_to_fish() {
 apply_macos_defaults() {
     log "Applying a few macOS defaults (safe-ish)…"
     # These are examples; tailor to your preferences.
-    run "defaults write NSGlobalDomain AppleShowAllExtensions -bool true"
-    run "defaults write com.apple.finder AppleShowAllFiles -bool true"
-    run "defaults write com.apple.finder ShowPathbar -bool true"
-    run "defaults write com.apple.finder ShowStatusBar -bool true"
+    run defaults write NSGlobalDomain AppleShowAllExtensions -bool true
+    run defaults write com.apple.finder AppleShowAllFiles -bool true
+    run defaults write com.apple.finder ShowPathbar -bool true
+    run defaults write com.apple.finder ShowStatusBar -bool true
     # run "defaults write com.apple.dock autohide -bool true"
     # run "defaults write NSGlobalDomain KeyRepeat -int 2"
     # run "defaults write NSGlobalDomain InitialKeyRepeat -int 15"
-    run "killall Finder >/dev/null 2>&1 || true"
-    run "killall Dock >/dev/null 2>&1 || true"
+    run_sh 'killall Finder >/dev/null 2>&1 || true'
+    run_sh 'killall Dock >/dev/null 2>&1 || true'
 }
 
 apply_wsl_tweaks() {
