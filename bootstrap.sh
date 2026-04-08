@@ -14,7 +14,6 @@ ASSUME_YES=false
 DRY_RUN=false
 SKIP_DOTFILES=false
 SKIP_PACKAGES=false
-SKIP_SETTINGS=false
 
 usage() {
     cat <<'EOF'
@@ -25,7 +24,6 @@ Options:
   --dry-run        Print actions without executing them
   --skip-dotfiles  Don't clone/install dotfiles
   --skip-packages  Don't install packages (brew install)
-  --skip-settings  Don't apply OS settings (macOS defaults / WSL tweaks)
   -h, --help       Show help
 
 Env overrides:
@@ -39,7 +37,6 @@ while [[ $# -gt 0 ]]; do
         --dry-run) DRY_RUN=true; shift ;;
         --skip-dotfiles) SKIP_DOTFILES=true; shift ;;
         --skip-packages) SKIP_PACKAGES=true; shift ;;
-        --skip-settings) SKIP_SETTINGS=true; shift ;;
         -h|--help) usage; exit 0 ;;
         *) echo "Unknown arg: $1"; usage; exit 1 ;;
     esac
@@ -286,40 +283,6 @@ set_default_shell_to_fish() {
 }
 # }}}
 
-# Bootstrap OS settings {{{
-apply_macos_defaults() {
-    log "Applying a few macOS defaults (safe-ish)…"
-    # These are examples; tailor to your preferences.
-    run defaults write NSGlobalDomain AppleShowAllExtensions -bool true
-    run defaults write com.apple.finder AppleShowAllFiles -bool true
-    run defaults write com.apple.finder ShowPathbar -bool true
-    run defaults write com.apple.finder ShowStatusBar -bool true
-    # run "defaults write com.apple.dock autohide -bool true"
-    # run "defaults write NSGlobalDomain KeyRepeat -int 2"
-    # run "defaults write NSGlobalDomain InitialKeyRepeat -int 15"
-    run_sh 'killall Finder >/dev/null 2>&1 || true'
-    run_sh 'killall Dock >/dev/null 2>&1 || true'
-}
-
-apply_wsl_tweaks() {
-    log "Applying a few WSL tweaks…"
-    log "Nothing to apply."
-}
-
-apply_settings() {
-    if $SKIP_SETTINGS; then
-        warn "Skipping settings."
-        return 0
-    fi
-
-    case "$PLATFORM" in
-        macos) apply_macos_defaults ;;
-        wsl) apply_wsl_tweaks ;;
-        *) warn "No settings defined for platform: $PLATFORM" ;;
-    esac
-}
-# }}}
-
 # Main {{{
 main() {
     log "Detected platform: $PLATFORM"
@@ -330,7 +293,6 @@ main() {
     install_packages
     install_dotfiles
     set_default_shell_to_fish
-    # apply_settings
 
     log "Bootstrap complete."
     warn "Open a new terminal (or source your rc file) so PATH changes take effect."
