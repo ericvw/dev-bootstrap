@@ -16,7 +16,7 @@ SKIP_DOTFILES=false
 SKIP_PACKAGES=false
 
 usage() {
-    cat <<'EOF'
+    cat << 'EOF'
 Usage: bash bootstrap.sh [options]
 
 Options:
@@ -33,20 +33,39 @@ EOF
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --yes) ASSUME_YES=true; shift ;;
-        --dry-run) DRY_RUN=true; shift ;;
-        --skip-dotfiles) SKIP_DOTFILES=true; shift ;;
-        --skip-packages) SKIP_PACKAGES=true; shift ;;
-        -h|--help) usage; exit 0 ;;
-        *) echo "Unknown arg: $1"; usage; exit 1 ;;
+        --yes)
+            ASSUME_YES=true
+            shift
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        --skip-dotfiles)
+            SKIP_DOTFILES=true
+            shift
+            ;;
+        --skip-packages)
+            SKIP_PACKAGES=true
+            shift
+            ;;
+        -h | --help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "Unknown arg: $1"
+            usage
+            exit 1
+            ;;
     esac
 done
 # }}}
 
 # Helpers {{{
-log()  { printf "\033[1;34m==>\033[0m %s\n" "$*"; }
+log() { printf "\033[1;34m==>\033[0m %s\n" "$*"; }
 warn() { printf "\033[1;33m!!\033[0m %s\n" "$*"; }
-err()  { printf "\033[1;31mxx\033[0m %s\n" "$*"; }
+err() { printf "\033[1;31mxx\033[0m %s\n" "$*"; }
 
 run() {
     if $DRY_RUN; then
@@ -79,18 +98,18 @@ confirm() {
     [[ "${ans:-}" =~ ^[Yy]$ ]]
 }
 
-have() { command -v "$1" >/dev/null 2>&1; }
+have() { command -v "$1" > /dev/null 2>&1; }
 
 is_macos() { [[ "$(uname -s)" == "Darwin" ]]; }
 
 is_wsl() {
     # Works for WSL1/WSL2
-    grep -qiE "(microsoft|wsl)" /proc/version 2>/dev/null
+    grep -qiE "(microsoft|wsl)" /proc/version 2> /dev/null
 }
 
 need_sudo() {
     if have sudo; then
-        sudo -n true >/dev/null 2>&1 || true
+        sudo -n true > /dev/null 2>&1 || true
     else
         err "sudo not found; install it or run as a user with privileges."
         exit 1
@@ -113,7 +132,7 @@ fi
 # Bootstrap OS packages for Homebrew {{{
 install_macos_prereqs() {
     log "Checking macOS prerequisites..."
-    if ! xcode-select -p >/dev/null 2>&1; then
+    if ! xcode-select -p > /dev/null 2>&1; then
         warn "Xcode Command Line Tools not found."
         if confirm "Install Xcode Command Line Tools now?"; then
             # This opens a GUI prompt; user must complete it.
@@ -146,10 +165,12 @@ brew_shellenv_eval() {
     # Ensure brew is on PATH for current process.
     if is_macos; then
         if [[ -x /opt/homebrew/bin/brew ]]; then
+            # shellcheck disable=SC2016
             run_eval 'eval "$(/opt/homebrew/bin/brew shellenv)"'
         fi
     else
         if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+            # shellcheck disable=SC2016
             run_eval 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"'
         fi
     fi
@@ -173,6 +194,7 @@ install_brew() {
     fi
 
     # Official Homebrew installer.
+    # shellcheck disable=SC2016
     run_sh '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
 
     brew_shellenv_eval
