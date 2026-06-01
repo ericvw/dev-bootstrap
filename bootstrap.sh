@@ -108,12 +108,32 @@ is_wsl() {
 }
 
 need_sudo() {
+    if $DRY_RUN; then return 0; fi
     if have sudo; then
-        sudo -n true > /dev/null 2>&1 || true
+        sudo -n true > /dev/null 2>&1 || sudo -v
     else
         err "sudo not found; install it or run as a user with privileges."
         exit 1
     fi
+}
+
+sudoers_write() {
+    local dest="$1"
+    local content="$2"
+    if $DRY_RUN; then
+        echo "[dry-run] sudoers_write $dest: $content"
+        return 0
+    fi
+    local tmp
+    tmp="$(mktemp)"
+    trap 'rm -f "$tmp"' RETURN
+    printf '%s\n' "$content" > "$tmp"
+    if ! visudo -cf "$tmp" > /dev/null 2>&1; then
+        err "sudoers syntax check failed for: $dest"
+        exit 1
+    fi
+    sudo cp "$tmp" "$dest"
+    sudo chmod 0440 "$dest"
 }
 # }}}
 
@@ -269,6 +289,29 @@ install_packages() {
 }
 # }}}
 
+# Configure sudoers {{{
+configure_sudoers() {
+    if [[ "$PLATFORM" != "wsl" ]]; then return 0; fi
+
+    local dest="/etc/sudoers.d/editor-env-keep"
+    if [[ -f "$dest" ]]; then
+        log "sudoers editor config already in place."
+        return 0
+    fi
+
+    need_sudo
+    log "Writing $dest..."
+    sudoers_write "$dest" 'Defaults env_keep += "EDITOR VISUAL"'
+}
+# }}}
+
+# Configure environment {{{
+configure_environment() {
+    set_default_shell_to_fish
+    configure_sudoers
+}
+# }}}
+
 # Bootstrap default shell {{{
 user_default_shell() {
     case "$PLATFORM" in
@@ -314,7 +357,7 @@ main() {
     clone_dotfiles
     install_packages
     install_dotfiles
-    set_default_shell_to_fish
+    configure_environment
 
     log "Bootstrap complete."
     warn "Open a new terminal (or source your rc file) so PATH changes take effect."
