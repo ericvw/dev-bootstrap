@@ -126,14 +126,14 @@ sudoers_write() {
     fi
     local tmp
     tmp="$(mktemp)"
-    trap 'rm -f "$tmp"' RETURN
     printf '%s\n' "$content" > "$tmp"
     if ! visudo -cf "$tmp" > /dev/null 2>&1; then
+        rm -f "$tmp"
         err "sudoers syntax check failed for: $dest"
         exit 1
     fi
-    sudo cp "$tmp" "$dest"
-    sudo chmod 0440 "$dest"
+    sudo install -m 0440 "$tmp" "$dest"
+    rm -f "$tmp"
 }
 # }}}
 
@@ -270,14 +270,11 @@ install_packages() {
         return 0
     fi
 
-    mapfile -t formulae < "$BREW_FORMULAE_FILE"
-
-    # Drop empty lines.
     local -a args=()
-    local f
-    for f in "${formulae[@]}"; do
-        [[ -n "$f" ]] && args+=("$f")
-    done
+    local line
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        [[ -n "$line" ]] && args+=("$line")
+    done < "$BREW_FORMULAE_FILE"
 
     if [[ "${#args[@]}" -eq 0 ]]; then
         warn "Formula list is empty: $BREW_FORMULAE_FILE"
