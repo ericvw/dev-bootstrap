@@ -10,7 +10,6 @@ BREW_FORMULAE_FILE="${BREW_FORMULAE_FILE:-$DOTFILES_DIR/brew-formulae.txt}"
 # }}}
 
 # Command-line parsing {{{
-ASSUME_YES=false
 DRY_RUN=false
 SKIP_DOTFILES=false
 SKIP_PACKAGES=false
@@ -20,7 +19,6 @@ usage() {
 Usage: bash bootstrap.sh [options]
 
 Options:
-  --yes            Non-interactive; assume "yes" for prompts
   --dry-run        Print actions without executing them
   --skip-dotfiles  Don't clone/install dotfiles
   --skip-packages  Don't install packages (brew install)
@@ -33,10 +31,6 @@ EOF
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --yes)
-            ASSUME_YES=true
-            shift
-            ;;
         --dry-run)
             DRY_RUN=true
             shift
@@ -89,13 +83,6 @@ run_sh() {
     else
         bash -c "$1"
     fi
-}
-
-confirm() {
-    local prompt="${1:-Continue?}"
-    $ASSUME_YES && return 0
-    read -r -p "$prompt [y/N] " ans
-    [[ "${ans:-}" =~ ^[Yy]$ ]]
 }
 
 have() { command -v "$1" > /dev/null 2>&1; }
@@ -153,14 +140,15 @@ fi
 install_macos_prereqs() {
     log "Checking macOS prerequisites..."
     if ! xcode-select -p > /dev/null 2>&1; then
-        warn "Xcode Command Line Tools not found."
-        if confirm "Install Xcode Command Line Tools now?"; then
-            # This opens a GUI prompt; user must complete it.
-            run_sh 'xcode-select --install || true'
-            warn "If installation prompts appeared, complete them, then re-run the script."
-        else
-            warn "Skipping Xcode CLT install. Brew install may fail."
+        warn "Xcode Command Line Tools not found; installing..."
+        # Opens a GUI prompt; user must complete it before re-running.
+        run xcode-select --install || true
+        warn "Complete the Command Line Tools installation, then re-run this script."
+        if $DRY_RUN; then
+            warn "Would exit here after launching the Command Line Tools installer."
+            return 0
         fi
+        exit 0
     fi
 }
 
@@ -208,14 +196,12 @@ install_brew() {
     fi
 
     log "Installing Homebrew..."
-    if ! have curl; then
-        err "curl is required to install Homebrew."
-        exit 1
-    fi
 
-    # Official Homebrew installer.
+    # Official Homebrew installer; NONINTERACTIVE skips prompts.
     # shellcheck disable=SC2016
-    run_sh '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+    run_sh 'NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+
+    if $DRY_RUN; then return 0; fi
 
     brew_shellenv_eval
 
