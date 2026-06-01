@@ -184,6 +184,16 @@ brew_shellenv_eval() {
     fi
 }
 
+brew_prefix() {
+    if have brew; then
+        brew --prefix
+    elif is_macos; then
+        echo /opt/homebrew
+    else
+        echo /home/linuxbrew/.linuxbrew
+    fi
+}
+
 install_brew() {
     # If brew is not on PATH, attempt to add it to PATH in case it is already installed.
     if ! have brew; then
@@ -297,20 +307,27 @@ configure_environment() {
 
 # Bootstrap default shell {{{
 user_default_shell() {
+    local user
+    user="$(id -un)"
+
     case "$PLATFORM" in
         macos)
-            dscl . -read ~/ UserShell | sed 's/UserShell: //'
+            dscl . -read "/Users/$user" UserShell | sed 's/UserShell: //'
             ;;
         *)
-            awk -F: -v u="$USER" '$1==u {print $NF; exit}' /etc/passwd
+            awk -F: -v u="$user" '$1==u {print $NF; exit}' /etc/passwd
             ;;
     esac
 }
 
 set_default_shell_to_fish() {
     local shell=
-    shell="$(brew --prefix)/bin/fish"
-    if [[ ! -x "$shell" ]]; then
+    local user=
+
+    shell="$(brew_prefix)/bin/fish"
+    user="$(id -un)"
+
+    if ! $DRY_RUN && [[ ! -x "$shell" ]]; then
         warn "fish is not installed; skipping applying default shell."
         return 0
     fi
@@ -321,13 +338,15 @@ set_default_shell_to_fish() {
         return 0
     fi
 
+    need_sudo
+
     # Append to list of permitted shells if it doesn't exist.
     if ! grep -qxF "$shell" /etc/shells; then
         log "Adding fish to /etc/shells (requires sudo)..."
-        run_sh "echo '$shell' | sudo tee -a /etc/shells"
+        run_sh "echo '$shell' | sudo tee -a /etc/shells > /dev/null"
     fi
 
-    run chsh -s "$shell"
+    run sudo chsh -s "$shell" "$user"
 }
 # }}}
 
