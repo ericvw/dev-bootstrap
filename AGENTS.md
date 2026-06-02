@@ -16,10 +16,11 @@ bash bootstrap.sh --dry-run [--skip-dotfiles] [--skip-packages]
 ## Architecture
 
 `bootstrap.sh` is a single-file bash script (~370 lines) organized with vim
-fold markers into six sequential stages:
+fold markers. `main()` runs six sequential stages:
 
-1. **Prerequisites** - Platform detection (`is_macos`, `is_wsl`) then installs
-   Xcode CLT (macOS) or apt packages (WSL)
+1. **Prerequisites** - Installs Xcode CLT (macOS) or apt packages (WSL);
+   platform is detected beforehand via top-level code using `is_macos` /
+   `is_wsl`
 2. **Homebrew** - Installs Homebrew if absent; idempotent
 3. **Dotfiles clone** - Clones `$DOTFILES_REPO` into `$DOTFILES_DIR`
 4. **Packages** - Reads `$BREW_FORMULAE_FILE` and `brew install`s each line
@@ -30,6 +31,7 @@ fold markers into six sequential stages:
 **Helper layer** (defined before stages):
 - `run` / `run_sh` / `run_eval` - wrap every shell command; respect `--dry-run`
 - `log` / `warn` / `err` - colored output
+- `is_macos` / `is_wsl` - platform predicates
 - `need_sudo` - caches sudo credentials; short-circuits under `--dry-run`
 - `sudoers_write` - validates content in a temp file before placing in
   `/etc/sudoers.d`
