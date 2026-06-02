@@ -114,7 +114,7 @@ sudoers_write() {
     local tmp
     tmp="$(mktemp)"
     printf '%s\n' "$content" > "$tmp"
-    if ! visudo -cf "$tmp" > /dev/null 2>&1; then
+    if ! sudo visudo -cf "$tmp" > /dev/null 2>&1; then
         rm -f "$tmp"
         err "sudoers syntax check failed for: $dest"
         exit 1
