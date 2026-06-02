@@ -153,10 +153,24 @@ install_macos_prereqs() {
 }
 
 install_wsl_prereqs() {
+    local -a pkgs=(build-essential curl file git procps ca-certificates)
+    local -a missing=()
+    local pkg
+    for pkg in "${pkgs[@]}"; do
+        if ! dpkg -s "$pkg" > /dev/null 2>&1; then
+            missing+=("$pkg")
+        fi
+    done
+
+    if [[ ${#missing[@]} -eq 0 ]]; then
+        log "WSL prerequisites already installed."
+        return 0
+    fi
+
     log "Installing WSL prerequisites (Ubuntu/Debian)..."
     need_sudo
     run sudo apt-get update -y
-    run sudo apt-get install -y build-essential curl file git procps ca-certificates
+    run sudo apt-get install -y "${missing[@]}"
 }
 
 install_platform_prereqs() {
