@@ -44,3 +44,11 @@ fold markers. `main()` runs six sequential stages:
 
 The script is intentionally idempotent: each stage checks whether its work is
 already done before acting.
+
+## Windows
+
+`git-install.inf` is an InnoSetup response file consumed by the Git for
+Windows installer via `/LOADINF`. It captures install-time options
+(components, editor, PATH integration, CRLF handling, credential manager,
+symlinks) verified against the current Windows registry. To regenerate from
+scratch: run the Git installer interactively with `/SAVEINF=git-install.inf`.
