@@ -10,6 +10,11 @@ Feel free to look around and take what inspires you!
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/ericvw/dev-bootstrap/main/bootstrap.sh)"
 ```
 
+Git Credential Manager is installed automatically:
+
+- **macOS** - installed as a Homebrew cask by the bootstrap script
+- **WSL** - provided by Git for Windows (enabled via `git-install.inf` below)
+
 ## Windows (PowerShell)
 
 ```powershell

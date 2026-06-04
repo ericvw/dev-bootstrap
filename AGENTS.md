@@ -15,8 +15,8 @@ bash bootstrap.sh --dry-run [--skip-dotfiles] [--skip-packages]
 
 ## Architecture
 
-`bootstrap.sh` is a single-file bash script (~370 lines) organized with vim
-fold markers. `main()` runs six sequential stages:
+`bootstrap.sh` is a single-file bash script (~400 lines) organized with vim
+fold markers. `main()` runs seven sequential stages:
 
 1. **Prerequisites** - Installs Xcode CLT (macOS) or apt packages (WSL);
    platform is detected beforehand via top-level code using `is_macos` /
@@ -24,8 +24,10 @@ fold markers. `main()` runs six sequential stages:
 2. **Homebrew** - Installs Homebrew if absent; idempotent
 3. **Dotfiles clone** - Clones `$DOTFILES_REPO` into `$DOTFILES_DIR`
 4. **Packages** - Reads `$BREW_FORMULAE_FILE` and `brew install`s each line
-5. **Dotfiles install** - Runs `$DOTFILES_DIR/install.sh` if present
-6. **Configure** - Sets fish as default shell via `sudo chsh`; drops a
+5. **GCM** - Installs Git Credential Manager via Homebrew cask (macOS only;
+   WSL uses GCM from the Windows host)
+6. **Dotfiles install** - Runs `$DOTFILES_DIR/install.sh` if present
+7. **Configure** - Sets fish as default shell via `sudo chsh`; drops a
    sudoers drop-in on WSL to preserve `EDITOR` and `VISUAL`
 
 **Helper layer** (defined before stages):
