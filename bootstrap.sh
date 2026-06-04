@@ -220,6 +220,7 @@ install_brew() {
     fi
 
     log "Installing Homebrew..."
+    need_sudo
 
     # Official Homebrew installer; NONINTERACTIVE skips prompts.
     # shellcheck disable=SC2016
@@ -293,6 +294,21 @@ install_packages() {
 
     log "Installing formulae from $BREW_FORMULAE_FILE"
     run brew install "${args[@]}"
+}
+# }}}
+
+# Bootstrap GCM {{{
+install_gcm() {
+    if ! is_macos; then return 0; fi
+    if $SKIP_PACKAGES; then return 0; fi
+
+    if have git-credential-manager; then
+        log "Git Credential Manager already installed."
+        return 0
+    fi
+
+    log "Installing Git Credential Manager..."
+    run brew install --cask git-credential-manager
 }
 # }}}
 
@@ -372,6 +388,7 @@ main() {
     install_brew
     clone_dotfiles
     install_packages
+    install_gcm
     install_dotfiles
     configure_environment
 
