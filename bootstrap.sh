@@ -293,7 +293,7 @@ install_packages() {
     fi
 
     log "Installing formulae from $BREW_FORMULAE_FILE"
-    run brew install "${args[@]}"
+    HOMEBREW_NO_ASK=1 run brew install "${args[@]}"
 }
 # }}}
 
@@ -308,7 +308,7 @@ install_gcm() {
     fi
 
     log "Installing Git Credential Manager..."
-    run brew install --cask git-credential-manager
+    HOMEBREW_NO_ASK=1 run brew install --cask git-credential-manager
 }
 # }}}
 
